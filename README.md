@@ -1,10 +1,10 @@
-﻿# 🚀 .NET Clean Architecture Setup
+﻿# 🚚 Kargo Takip Sistemi
 
-Bu repository, **.NET Web API projelerinde başlangıç noktası olarak kullanılabilecek**, sürdürülebilir, ölçeklenebilir ve güvenli bir **Clean Architecture starter template** sunmaktadır.
+Bu proje, **.NET 9 Web API** kullanılarak geliştirilmiş, **Clean Architecture** prensiplerini temel alan bir **Kargo Takip Sistemi** API'sidir.
 
-Proje; yaygın olarak kullanılan mimari yapıların, tasarım desenlerinin, authentication mekanizmasının ve temel kütüphanelerin hazır bir altyapı halinde sunulmasını amaçlamaktadır.
+Projenin amacı; kargo kayıtlarının oluşturulması, takip edilmesi ve kullanıcıların güvenli bir şekilde sisteme giriş yaparak yetkileri doğrultusunda API kaynaklarına erişebilmesini sağlayan sürdürülebilir ve ölçeklenebilir bir backend altyapısı oluşturmaktır.
 
-Yeni projelerde tekrar tekrar kurulması gereken temel yapıların hazır olarak kullanılabilmesi ve geliştirme sürecinin hızlandırılması hedeflenmiştir.
+Projede **Clean Architecture, CQRS, Repository, Unit of Work, ASP.NET Core Identity ve JWT Authentication** gibi gerçek dünya projelerinde kullanılan yapılar bir arada uygulanmıştır.
 
 ---
 
@@ -21,102 +21,88 @@ Temel prensipler:
 * Loose Coupling
 * Dependency Inversion
 
-Uygulama; business logic, application logic, infrastructure ve presentation sorumluluklarını birbirinden ayıracak şekilde tasarlanmıştır.
+Uygulama; **Domain, Application, Infrastructure ve Presentation** katmanlarına ayrılmıştır.
+
+Bu sayede business logic ile framework, database ve API gibi dış bağımlılıkların birbirinden ayrılması hedeflenmiştir.
 
 ---
 
-## 🧩 Design Patterns
+## 📦 Domain
 
-Projede aşağıdaki tasarım desenleri ve mimari yaklaşımlar kullanılmaktadır:
+Projenin temel domain'i **Kargo Takip Sistemi** üzerine kuruludur.
 
-* **Result Pattern** – İşlem sonuçlarını standart ve kontrollü şekilde yönetmek için
-* **Repository Pattern** – Veri erişim işlemlerini soyutlamak için
-* **CQRS Pattern** – Command ve Query işlemlerini birbirinden ayırmak için
-* **Unit of Work Pattern** – Birden fazla veri işlemini tek bir transaction kapsamında yönetmek için
-* **Dependency Injection** – Servisler arasındaki bağımlılıkları yönetmek için
+Sistemde kargo ile ilgili temel bilgiler ve kargo operasyonlarının yönetilmesine yönelik entity'ler bulunmaktadır.
+
+Örneğin:
+
+* Kargo
+* KargoInformation
+* KargoTipi
+* User
+
+Kargo yapısı; gönderi, teslimat ve kargo bilgileri gibi domain'e ait verilerin yönetilmesini sağlar.
+
+---
+
+## 👤 User Management
+
+Projede kullanıcı yönetimi için **ASP.NET Core Identity** kullanılmaktadır.
+
+Kullanıcı işlemleri:
+
+* User Registration
+* User Login
+* Password Management
+* User ID Management
+* Role Management
+* Authentication
+* Authorization
+
+Identity altyapısı sayesinde kullanıcı bilgileri güvenli bir şekilde yönetilmektedir.
+
+Kullanıcı entity'si, uygulamanın ihtiyaçlarına göre **ASP.NET Core IdentityUser** üzerinden genişletilmiştir.
 
 ---
 
 ## 🔐 Authentication & Authorization
 
-Projede temel kullanıcı yönetimi ve authentication altyapısı bulunmaktadır.
+API authentication mekanizması **JWT (JSON Web Token)** kullanılarak oluşturulmuştur.
 
-### ASP.NET Core Identity
+Kullanıcı başarılı bir şekilde login olduğunda JWT token oluşturulur.
 
-Kullanıcı yönetimi için **ASP.NET Core Identity** kullanılmaktadır.
-
-Identity altyapısı üzerinden:
-
-* User oluşturma
-* User login
-* Password management
-* User ID yönetimi
-* Role management
-* Authentication
-* Authorization
-
-işlemleri gerçekleştirilmektedir.
-
-Kullanıcı entity'si Identity altyapısı ile genişletilerek uygulamaya özel alanların eklenmesine uygun hale getirilmiştir.
-
----
-
-### 🔑 JWT Authentication
-
-API authentication işlemleri **JWT (JSON Web Token)** tabanlı olarak gerçekleştirilmektedir.
-
-Login işlemi sonrasında başarılı authentication sonucunda kullanıcı için JWT token oluşturulur.
-
-Token içerisinde kullanıcıyı tanımlamak ve authorization işlemlerinde kullanmak amacıyla gerekli claim bilgileri bulunmaktadır.
-
-Client tarafından gönderilen JWT token, API tarafından doğrulanarak korumalı endpoint'lere erişim sağlanmaktadır.
-
-Genel authentication flow:
+Client, korumalı endpoint'lere erişirken token'ı `Authorization` header içerisinde gönderir.
 
 ```text
 Client
    ↓
 Login
    ↓
-User Validation
-   ↓
 ASP.NET Core Identity
    ↓
-JWT Token Generation
+User Validation
    ↓
-Client receives Token
+JWT Provider
    ↓
-Authorization Header
+JWT Token
+   ↓
+Client
+   ↓
+Bearer Token
    ↓
 JWT Validation
    ↓
-Protected API Endpoint
+Protected API
 ```
 
----
-
-## 👤 User Management
-
-Projede kullanıcıların authentication işlemlerinin yönetilebilmesi için user tabanlı bir yapı bulunmaktadır.
-
-Temel işlemler:
-
-* User Registration
-* User Login
-* Password Validation
-* JWT Token Generation
-* User Authentication
-* Role-based Authorization
-
-Kullanıcı bilgileri **Entity Framework Core + ASP.NET Core Identity** üzerinden veritabanında tutulmaktadır.
+JWT içerisinde kullanıcıyı tanımlamak için gerekli claim bilgileri bulunmaktadır.
 
 ---
 
-## 🛡️ Role-Based Authorization
+## 🛡️ Authorization
 
-Authentication yanında authorization mekanizması da desteklenmektedir.
+Authentication sonrasında kullanıcıların API kaynaklarına erişimi authorization mekanizması ile kontrol edilmektedir.
 
-Kullanıcıların rollerine göre belirli endpoint'lere erişimleri sınırlandırılabilir.
+Kullanıcı rollerine göre belirli endpoint'ler sınırlandırılabilir.
 
 Örneğin:
 
@@ -127,27 +113,70 @@ User
  └── Admin
 ```
 
-Endpoint'ler gerekli role göre korunabilir.
+Bu yapı sayesinde kullanıcıların yalnızca yetkili oldukları kaynaklara erişmesi sağlanabilir.
+
+---
+
+## 🧩 Design Patterns
+
+Projede aşağıdaki tasarım desenleri ve mimari yaklaşımlar kullanılmaktadır:
+
+### Result Pattern
+
+API işlemlerinden dönen sonuçların standart bir yapı içerisinde yönetilmesini sağlar.
+
+### Repository Pattern
+
+Veri erişim işlemlerini business logic'ten ayırmak ve database işlemlerini soyutlamak için kullanılmaktadır.
+
+### CQRS Pattern
+
+Command ve Query işlemlerinin birbirinden ayrılmasını sağlar.
+
+Örneğin:
 
 ```text
-Authenticated User
-        ↓
-JWT Validation
-        ↓
-User Claims / Roles
-        ↓
-Authorization
-        ↓
-Protected Endpoint
+Command
+ ├── KargoCreateCommand
+ ├── KargoUpdateCommand
+ └── KargoDeleteCommand
+
+Query
+ ├── KargoGetByIdQuery
+ └── KargoGetAllQuery
 ```
 
-Bu yapı sayesinde authentication ve authorization birbirinden ayrılarak daha kontrollü bir erişim mekanizması oluşturulmuştur.
+### Unit of Work Pattern
+
+Birden fazla database işleminin tek bir çalışma birimi içerisinde yönetilmesini sağlar.
+
+### Dependency Injection
+
+Servisler arasındaki bağımlılıkların yönetilmesi için ASP.NET Core Dependency Injection altyapısı kullanılmaktadır.
+
+---
+
+## 🛠️ Technologies & Libraries
+
+| Technology / Library                         | Purpose                                     |
+| -------------------------------------------- | ------------------------------------------- |
+| **.NET 9**                                   | Application framework                       |
+| **ASP.NET Core Web API**                     | API development                             |
+| **ASP.NET Core Identity**                    | User and authentication management          |
+| **JWT**                                      | Token-based authentication                  |
+| **Entity Framework Core**                    | ORM and database operations                 |
+| **SQL Server**                               | Relational database                         |
+| **MediatR**                                  | CQRS ve request/handler yönetimi            |
+| **TS.Result**                                | Standard Result response structure          |
+| **Mapster**                                  | Object mapping                              |
+| **FluentValidation**                         | Request validation                          |
+| **TS.EntityFrameworkCore.GenericRepository** | Generic repository infrastructure           |
+| **OData**                                    | Dynamic filtering, sorting and querying     |
+| **Scrutor**                                  | Automatic dependency injection registration |
 
 ---
 
 ## 🗂️ Architecture Overview
-
-Proje, sorumlulukların birbirinden ayrıldığı katmanlı bir yapı üzerine kurulmuştur.
 
 ```text
                     Presentation
@@ -164,9 +193,17 @@ Proje, sorumlulukların birbirinden ayrıldığı katmanlı bir yapı üzerine k
 
 ### Domain
 
-Uygulamanın temel business modellerini, entity'lerini ve domain kurallarını içerir.
+Kargo takip sisteminin temel business modellerini ve kurallarını içerir.
 
-Domain katmanı mümkün olduğunca dış bağımlılıklardan bağımsız tutulmuştur.
+```text
+Domain
+├── Kargo
+├── KargoInformation
+├── KargoTipi
+└── Users
+```
+
+Domain katmanı database veya API gibi dış bağımlılıklardan bağımsız tutulmaya çalışılmıştır.
 
 ---
 
@@ -182,15 +219,16 @@ Uygulamanın business işlemlerinin yönetildiği katmandır.
 * DTOs
 * Validators
 * Application Services
-* Authentication related operations
 
-gibi uygulama seviyesindeki işlemler bulunmaktadır.
+bulunmaktadır.
+
+Kargo işlemleri MediatR üzerinden Command ve Query yapıları kullanılarak yönetilmektedir.
 
 ---
 
 ### Infrastructure
 
-Dış sistemlerle, veritabanıyla ve framework bağımlılıklarıyla ilgili implementasyonları içerir.
+Database ve dış bağımlılıkların implementasyonlarını içerir.
 
 Örneğin:
 
@@ -198,12 +236,9 @@ Dış sistemlerle, veritabanıyla ve framework bağımlılıklarıyla ilgili imp
 * ASP.NET Core Identity
 * Repository
 * Unit of Work
-* Database Configuration
 * JWT Provider
+* Database Configuration
 * External Services
-* Persistence
-
-gibi altyapı implementasyonları burada bulunmaktadır.
 
 ---
 
@@ -215,7 +250,7 @@ API'nin dış dünyaya açılan katmanıdır.
 
 * API Endpoints
 * HTTP Requests / Responses
-* Authentication Configuration
+* Authentication
 * Authorization
 * Swagger
 * API Configuration
@@ -224,9 +259,31 @@ gibi işlemler bulunmaktadır.
 
 ---
 
+# 📦 Kargo Management
+
+Sistemin temel business operasyonu kargo yönetimidir.
+
+Kargo işlemleri CQRS yaklaşımı kullanılarak yönetilmektedir.
+
+Örnek operasyonlar:
+
+```text
+Kargo
+│
+├── Create
+├── Get All
+├── Get By Id
+├── Update
+└── Delete
+```
+
+Kargo bilgileri içerisinde kargonun türü ve teslimat bilgileri gibi ilişkili domain verileri de yönetilebilmektedir.
+
+---
+
 ## 🔄 Request Flow
 
-Tipik bir authenticated API request'i aşağıdaki akışı takip eder:
+Tipik bir kargo API request'i aşağıdaki akışı takip eder:
 
 ```text
 Client
@@ -235,15 +292,15 @@ HTTP Request
    ↓
 Presentation
    ↓
-Authentication Middleware
-   ↓
-JWT Validation
+Authentication
    ↓
 Authorization
    ↓
 MediatR
    ↓
-Command / Query Handler
+Command / Query
+   ↓
+Handler
    ↓
 Application
    ↓
@@ -251,91 +308,60 @@ Repository / UnitOfWork
    ↓
 Entity Framework Core
    ↓
-Database
+SQL Server
 ```
 
-Login işlemi ise:
+Örneğin bir kargo sorgulama işlemi:
 
 ```text
-Client
-   ↓
-Login Request
-   ↓
-Authentication Handler
-   ↓
-ASP.NET Core Identity
-   ↓
-User Validation
-   ↓
-JWT Provider
-   ↓
-JWT Token
-   ↓
-Client
+GET /kargo/{id}
+       ↓
+KargoGetByIdQuery
+       ↓
+KargoGetByIdQueryHandler
+       ↓
+Repository
+       ↓
+Entity Framework Core
+       ↓
+SQL Server
+       ↓
+DTO
+       ↓
+Result
+       ↓
+HTTP Response
 ```
 
 ---
 
-## 🛠️ Technologies & Libraries
+## 🔑 Authentication Flow
 
-Projede kullanılan temel teknolojiler ve kütüphaneler:
+Login işlemi:
 
-| Technology / Library                         | Purpose                                     |
-| -------------------------------------------- | ------------------------------------------- |
-| **.NET 9**                                   | Application framework                       |
-| **ASP.NET Core Web API**                     | API development                             |
-| **ASP.NET Core Identity**                    | User and authentication management          |
-| **JWT**                                      | Token-based authentication                  |
-| **Entity Framework Core**                    | ORM and database operations                 |
-| **SQL Server**                               | Relational database                         |
-| **MediatR**                                  | CQRS ve request/handler yönetimi            |
-| **TS.Result**                                | Standard Result response structure          |
-| **Mapster**                                  | Object mapping                              |
-| **FluentValidation**                         | Request ve DTO validation                   |
-| **TS.EntityFrameworkCore.GenericRepository** | Generic repository infrastructure           |
-| **OData**                                    | Dynamic filtering, sorting and querying     |
-| **Scrutor**                                  | Automatic dependency injection registration |
+```text
+POST /auth/login
+       ↓
+User Credentials
+       ↓
+ASP.NET Core Identity
+       ↓
+User Validation
+       ↓
+JWT Provider
+       ↓
+JWT Token
+       ↓
+Client
+```
 
----
+Korumalı endpoint'lere erişim:
 
-## 🔑 Authentication Features
+```http
+Authorization: Bearer <JWT_TOKEN>
+```
 
-Authentication altyapısında aşağıdaki özellikler bulunmaktadır:
-
-* ✅ User Registration
-* ✅ User Login
-* ✅ ASP.NET Core Identity
-* ✅ JWT Authentication
-* ✅ JWT Claims
-* ✅ Role-Based Authorization
-* ✅ Password Hashing
-* ✅ Protected API Endpoints
-* ✅ User ID based authentication
-* ✅ Authentication Middleware
-* ✅ Authorization Middleware
-
----
-
-## 📦 Key Features
-
-* ✅ Clean Architecture
-* ✅ CQRS
-* ✅ Repository Pattern
-* ✅ Unit of Work Pattern
-* ✅ Result Pattern
-* ✅ Dependency Injection
-* ✅ MediatR
-* ✅ FluentValidation
-* ✅ Mapster
-* ✅ Entity Framework Core
-* ✅ Generic Repository
-* ✅ OData
-* ✅ Scrutor
-* ✅ ASP.NET Core Identity
-* ✅ JWT Authentication
-* ✅ User Management
-* ✅ Role-Based Authorization
-* ✅ Separation of Concerns
+Token doğrulandıktan sonra kullanıcının API kaynağına erişim yetkisi kontrol edilir.
 
 ---
 
@@ -347,17 +373,22 @@ Genel proje yapısı:
 src
 │
 ├── Domain
-│   ├── Entities
+│   ├── Kargos
+│   ├── KargoInformations
+│   ├── KargoTipis
 │   ├── Users
 │   └── ...
 │
 ├── Application
-│   ├── Commands
-│   ├── Queries
-│   ├── Handlers
-│   ├── DTOs
-│   ├── Validators
-│   └── Services
+│   ├── Kargos
+│   │   ├── Commands
+│   │   ├── Queries
+│   │   ├── Handlers
+│   │   ├── DTOs
+│   │   └── Validators
+│   │
+│   ├── Users
+│   └── ...
 │
 ├── Infrastructure
 │   ├── Context
@@ -414,57 +445,79 @@ dotnet run
 
 ---
 
-## 🔐 Authentication Usage
+## 📚 API Documentation
 
-Uygulama çalıştırıldıktan sonra kullanıcı kayıt ve login endpoint'leri üzerinden authentication işlemleri gerçekleştirilebilir.
+API endpoint'leri **Swagger / OpenAPI** üzerinden test edilebilir.
 
-Genel kullanım:
+Uygulama çalıştırıldıktan sonra Swagger üzerinden:
 
-```text
-Register
-   ↓
-Login
-   ↓
-JWT Token
-   ↓
-Authorization Header
-   ↓
-Protected Endpoint
-```
+* User Registration
+* User Login
+* JWT Authentication
+* Kargo işlemleri
+* Kargo sorgulama
+* Kargo güncelleme
 
-Korumalı endpoint'lere erişirken JWT token aşağıdaki şekilde gönderilir:
+gibi API işlemleri gerçekleştirilebilir.
 
-```http
-Authorization: Bearer <JWT_TOKEN>
-```
+JWT authentication kullanıldığı için korumalı endpoint'leri test etmeden önce login işlemi gerçekleştirilerek alınan token'ın Swagger üzerinde authorize edilmesi gerekir.
 
 ---
 
-## 🎯 Purpose
+## ✨ Key Features
 
-Bu repository'nin amacı, yeni bir **.NET Web API** projesine başlanırken tekrar tekrar oluşturulması gereken temel mimari ve teknik yapıların hazır bir template halinde sunulmasıdır.
+* ✅ Clean Architecture
+* ✅ CQRS
+* ✅ MediatR
+* ✅ Repository Pattern
+* ✅ Generic Repository
+* ✅ Unit of Work
+* ✅ Result Pattern
+* ✅ Dependency Injection
+* ✅ ASP.NET Core Identity
+* ✅ JWT Authentication
+* ✅ Role-Based Authorization
+* ✅ User Registration & Login
+* ✅ Entity Framework Core
+* ✅ SQL Server
+* ✅ Mapster
+* ✅ FluentValidation
+* ✅ OData
+* ✅ Scrutor
+* ✅ Swagger / OpenAPI
+* ✅ Kargo Management
+* ✅ Separation of Concerns
 
-Template içerisinde yalnızca Clean Architecture yapısı değil, aynı zamanda:
+---
 
-* Authentication
-* Authorization
-* User Management
-* JWT
-* Identity
+## 🎯 Project Purpose
+
+Bu projenin amacı, gerçek bir **Kargo Takip Sistemi** senaryosu üzerinden modern **.NET Web API** geliştirme yaklaşımını ve Clean Architecture prensiplerini uygulamaktır.
+
+Proje içerisinde yalnızca CRUD işlemleri değil; aynı zamanda gerçek projelerde kullanılan:
+
+* Clean Architecture
 * CQRS
 * Repository
 * Unit of Work
+* Authentication
+* Authorization
+* Identity
+* JWT
 * Validation
 * Mapping
-* Database Access
 * Dependency Injection
+* ORM
+* Database Management
 
-gibi gerçek projelerde sık kullanılan altyapılar da hazır olarak bulunmaktadır.
+gibi backend geliştirme konuları birlikte uygulanmaktadır.
 
-Bu sayede yeni projeler doğrudan bu altyapı üzerinden geliştirilebilir ve başlangıç aşamasındaki tekrar eden kurulum işlemleri azaltılabilir.
+Bu yapı, ilerleyen aşamalarda kargo takip sistemine yeni business kurallarının ve özelliklerin eklenebilmesine uygun şekilde tasarlanmıştır.
 
 ---
 
 ## 👨‍💻 Author
 
-Developed as a reusable **.NET Clean Architecture Web API starter template** with authentication and authorization infrastructure.
+Developed as a **.NET 9 Clean Architecture Web API Kargo Takip Sistemi** project.
+
+The project focuses on applying modern backend development practices, clean architecture principles, authentication and authorization mechanisms in a real-world domain scenario.
