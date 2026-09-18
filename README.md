@@ -2,7 +2,7 @@
 
 Bu proje, **.NET 9 Web API** kullanılarak geliştirilmiş, **Clean Architecture** prensiplerini temel alan bir **Kargo Takip Sistemi** API'sidir.
 
-Projenin amacı; kargo kayıtlarının oluşturulması, takip edilmesi ve kullanıcıların güvenli bir şekilde sisteme giriş yaparak yetkileri doğrultusunda API kaynaklarına erişebilmesini sağlayan sürdürülebilir ve ölçeklenebilir bir backend altyapısı oluşturmaktır.
+Projenin amacı; kargo kayıtlarının oluşturulması, takip edilmesi, güncellenmesi, silinmesi ve kargo durumlarının yönetilmesi ile kullanıcıların güvenli bir şekilde sisteme giriş yaparak yetkileri doğrultusunda API kaynaklarına erişebilmesini sağlayan sürdürülebilir ve ölçeklenebilir bir backend altyapısı oluşturmaktır.
 
 Projede **Clean Architecture, CQRS, Repository, Unit of Work, ASP.NET Core Identity ve JWT Authentication** gibi gerçek dünya projelerinde kullanılan yapılar bir arada uygulanmıştır.
 
@@ -31,7 +31,7 @@ Bu sayede business logic ile framework, database ve API gibi dış bağımlılı
 
 Projenin temel domain'i **Kargo Takip Sistemi** üzerine kuruludur.
 
-Sistemde kargo ile ilgili temel bilgiler ve kargo operasyonlarının yönetilmesine yönelik entity'ler bulunmaktadır.
+Sistemde kargo operasyonlarının yönetilmesine yönelik temel entity'ler bulunmaktadır.
 
 Örneğin:
 
@@ -40,7 +40,7 @@ Sistemde kargo ile ilgili temel bilgiler ve kargo operasyonlarının yönetilmes
 * KargoTipi
 * User
 
-Kargo yapısı; gönderi, teslimat ve kargo bilgileri gibi domain'e ait verilerin yönetilmesini sağlar.
+Kargo yapısı; gönderici, alıcı, teslimat adresi, kargo bilgileri ve kargo durumu gibi domain'e ait verilerin yönetilmesini sağlar.
 
 ---
 
@@ -117,7 +117,7 @@ Bu yapı sayesinde kullanıcıların yalnızca yetkili oldukları kaynaklara eri
 
 ---
 
-## 🧩 Design Patterns
+# 🧩 Design Patterns
 
 Projede aşağıdaki tasarım desenleri ve mimari yaklaşımlar kullanılmaktadır:
 
@@ -139,12 +139,15 @@ Command ve Query işlemlerinin birbirinden ayrılmasını sağlar.
 Command
  ├── KargoCreateCommand
  ├── KargoUpdateCommand
- └── KargoDeleteCommand
+ ├── KargoDeleteCommand
+ └── KargoStatusUpdateCommand
 
 Query
  ├── KargoGetByIdQuery
  └── KargoGetAllQuery
 ```
+
+Bu yapı sayesinde kargo üzerinde gerçekleştirilen veri değiştirme işlemleri ile veri okuma işlemleri birbirinden ayrılmıştır.
 
 ### Unit of Work Pattern
 
@@ -176,7 +179,7 @@ Servisler arasındaki bağımlılıkların yönetilmesi için ASP.NET Core Depen
 
 ---
 
-## 🗂️ Architecture Overview
+# 🗂️ Architecture Overview
 
 ```text
                     Presentation
@@ -197,10 +200,11 @@ Kargo takip sisteminin temel business modellerini ve kurallarını içerir.
 
 ```text
 Domain
-├── Kargo
-├── KargoInformation
-├── KargoTipi
-└── Users
+├── Kargos
+├── KargoInformations
+├── KargoTipis
+├── Users
+└── ...
 ```
 
 Domain katmanı database veya API gibi dış bağımlılıklardan bağımsız tutulmaya çalışılmıştır.
@@ -261,11 +265,11 @@ gibi işlemler bulunmaktadır.
 
 # 📦 Kargo Management
 
-Sistemin temel business operasyonu kargo yönetimidir.
+Sistemin temel business operasyonu **kargo yönetimidir**.
 
 Kargo işlemleri CQRS yaklaşımı kullanılarak yönetilmektedir.
 
-Örnek operasyonlar:
+Kargo üzerinde gerçekleştirilebilen temel operasyonlar:
 
 ```text
 Kargo
@@ -274,14 +278,178 @@ Kargo
 ├── Get All
 ├── Get By Id
 ├── Update
-└── Delete
+├── Delete
+└── Update Status
 ```
 
-Kargo bilgileri içerisinde kargonun türü ve teslimat bilgileri gibi ilişkili domain verileri de yönetilebilmektedir.
+Kargo bilgileri içerisinde kargonun türü, ağırlığı, gönderici, alıcı ve teslimat bilgileri gibi ilişkili domain verileri de yönetilebilmektedir.
 
 ---
 
-## 🔄 Request Flow
+## 🔄 Kargo Operations
+
+### Create Kargo
+
+Yeni bir kargo kaydı oluşturulmasını sağlar.
+
+```text
+KargoCreateCommand
+        ↓
+KargoCreateCommandHandler
+        ↓
+Validation
+        ↓
+Repository
+        ↓
+UnitOfWork
+        ↓
+Database
+```
+
+---
+
+### Update Kargo
+
+Mevcut kargo bilgilerinin güncellenmesini sağlar.
+
+```text
+KargoUpdateCommand
+        ↓
+KargoUpdateCommandHandler
+        ↓
+Validation
+        ↓
+Repository
+        ↓
+UnitOfWork
+        ↓
+Database
+```
+
+Kargo üzerinde güncellenebilen alanlar business gereksinimlerine göre yönetilmektedir.
+
+---
+
+### Delete Kargo
+
+Mevcut bir kargo kaydının sistemden silinmesini sağlar.
+
+```text
+KargoDeleteCommand
+        ↓
+KargoDeleteCommandHandler
+        ↓
+Repository
+        ↓
+UnitOfWork
+        ↓
+Database
+```
+
+Delete işlemi CQRS içerisindeki ayrı bir **Command** olarak ele alınmaktadır.
+
+---
+
+### Update Kargo Status
+
+Kargonun mevcut durumunun güncellenmesini sağlayan business operasyonudur.
+
+Örneğin:
+
+```text
+Kargo Status
+
+Created
+   ↓
+Accepted
+   ↓
+InTransit
+   ↓
+OutForDelivery
+   ↓
+Delivered
+```
+
+Kargo durumunun güncellenmesi, kargonun diğer bilgilerinin güncellenmesinden ayrı bir operation olarak ele alınmaktadır.
+
+Örneğin:
+
+```text
+KargoStatusUpdateCommand
+        ↓
+KargoStatusUpdateCommandHandler
+        ↓
+Business Rules
+        ↓
+Repository
+        ↓
+UnitOfWork
+        ↓
+Database
+```
+
+Bu yapı sayesinde kargonun durum değişiklikleri ileride daha kapsamlı business kuralları ile genişletilebilir.
+
+---
+
+## 🔍 Kargo Query Operations
+
+Kargo verilerinin okunması için Query yapıları kullanılmaktadır.
+
+```text
+Query
+│
+├── KargoGetAllQuery
+└── KargoGetByIdQuery
+```
+
+### Get All
+
+Kargo kayıtlarının listelenmesini sağlar.
+
+OData kullanılarak dinamik sorgulama özellikleri desteklenmektedir.
+
+Örneğin:
+
+```text
+GET /odata/kargo
+```
+
+OData sayesinde filtreleme, sıralama ve sorgulama işlemleri API seviyesinde gerçekleştirilebilir.
+
+### Get By Id
+
+Belirli bir kargonun detaylarını getirir.
+
+```text
+GET /kargo/{id}
+```
+
+Örnek request flow:
+
+```text
+GET /kargo/{id}
+       ↓
+KargoGetByIdQuery
+       ↓
+KargoGetByIdQueryHandler
+       ↓
+Repository
+       ↓
+Entity Framework Core
+       ↓
+SQL Server
+       ↓
+DTO
+       ↓
+Result
+       ↓
+HTTP Response
+```
+
+---
+
+# 🔄 Request Flow
 
 Tipik bir kargo API request'i aşağıdaki akışı takip eder:
 
@@ -311,22 +479,44 @@ Entity Framework Core
 SQL Server
 ```
 
-Örneğin bir kargo sorgulama işlemi:
+Örneğin bir kargo güncelleme işlemi:
 
 ```text
-GET /kargo/{id}
+PUT /kargo/{id}
        ↓
-KargoGetByIdQuery
+KargoUpdateCommand
        ↓
-KargoGetByIdQueryHandler
+KargoUpdateCommandHandler
+       ↓
+Validation
        ↓
 Repository
        ↓
-Entity Framework Core
+UnitOfWork
        ↓
 SQL Server
        ↓
-DTO
+Result
+       ↓
+HTTP Response
+```
+
+Kargo durum güncelleme işlemi:
+
+```text
+PATCH /kargo/{id}/status
+       ↓
+KargoStatusUpdateCommand
+       ↓
+KargoStatusUpdateCommandHandler
+       ↓
+Business Rules
+       ↓
+Repository
+       ↓
+UnitOfWork
+       ↓
+SQL Server
        ↓
 Result
        ↓
@@ -335,7 +525,7 @@ HTTP Response
 
 ---
 
-## 🔑 Authentication Flow
+# 🔑 Authentication Flow
 
 Login işlemi:
 
@@ -365,7 +555,7 @@ Token doğrulandıktan sonra kullanıcının API kaynağına erişim yetkisi kon
 
 ---
 
-## 📁 Project Structure
+# 📁 Project Structure
 
 Genel proje yapısı:
 
@@ -382,8 +572,15 @@ src
 ├── Application
 │   ├── Kargos
 │   │   ├── Commands
+│   │   │   ├── KargoCreate
+│   │   │   ├── KargoUpdate
+│   │   │   ├── KargoDelete
+│   │   │   └── KargoStatusUpdate
+│   │   │
 │   │   ├── Queries
-│   │   ├── Handlers
+│   │   │   ├── KargoGetAll
+│   │   │   └── KargoGetById
+│   │   │
 │   │   ├── DTOs
 │   │   └── Validators
 │   │
@@ -405,7 +602,7 @@ src
 
 ---
 
-## 🚀 Getting Started
+# 🚀 Getting Started
 
 Repository'yi klonlayın:
 
@@ -445,7 +642,7 @@ dotnet run
 
 ---
 
-## 📚 API Documentation
+# 📚 API Documentation
 
 API endpoint'leri **Swagger / OpenAPI** üzerinden test edilebilir.
 
@@ -454,9 +651,13 @@ Uygulama çalıştırıldıktan sonra Swagger üzerinden:
 * User Registration
 * User Login
 * JWT Authentication
-* Kargo işlemleri
-* Kargo sorgulama
+* Kargo oluşturma
+* Kargo listeleme
+* Kargo detayını görüntüleme
 * Kargo güncelleme
+* Kargo silme
+* Kargo durumunu güncelleme
+* Kargo sorgulama
 
 gibi API işlemleri gerçekleştirilebilir.
 
@@ -464,7 +665,7 @@ JWT authentication kullanıldığı için korumalı endpoint'leri test etmeden �
 
 ---
 
-## ✨ Key Features
+# ✨ Key Features
 
 * ✅ Clean Architecture
 * ✅ CQRS
@@ -486,15 +687,19 @@ JWT authentication kullanıldığı için korumalı endpoint'leri test etmeden �
 * ✅ Scrutor
 * ✅ Swagger / OpenAPI
 * ✅ Kargo Management
+* ✅ Kargo Create
+* ✅ Kargo Update
+* ✅ Kargo Delete
+* ✅ Kargo Status Update
 * ✅ Separation of Concerns
 
 ---
 
-## 🎯 Project Purpose
+# 🎯 Project Purpose
 
 Bu projenin amacı, gerçek bir **Kargo Takip Sistemi** senaryosu üzerinden modern **.NET Web API** geliştirme yaklaşımını ve Clean Architecture prensiplerini uygulamaktır.
 
-Proje içerisinde yalnızca CRUD işlemleri değil; aynı zamanda gerçek projelerde kullanılan:
+Proje içerisinde yalnızca temel CRUD işlemleri değil; aynı zamanda gerçek projelerde kullanılan:
 
 * Clean Architecture
 * CQRS
@@ -509,10 +714,13 @@ Proje içerisinde yalnızca CRUD işlemleri değil; aynı zamanda gerçek projel
 * Dependency Injection
 * ORM
 * Database Management
+* Business Rule Based Operations
 
 gibi backend geliştirme konuları birlikte uygulanmaktadır.
 
-Bu yapı, ilerleyen aşamalarda kargo takip sistemine yeni business kurallarının ve özelliklerin eklenebilmesine uygun şekilde tasarlanmıştır.
+Özellikle **Kargo Durum Güncelleme** işleminin ayrı bir Command ve Handler üzerinden ele alınması, kargo bilgilerinin basit CRUD işlemlerinden bağımsız olarak business operasyonlarının yönetilebilmesine olanak sağlamaktadır.
+
+Bu yapı, ilerleyen aşamalarda kargo takip sistemine yeni business kurallarının ve özelliklerinin eklenebilmesine uygun şekilde tasarlanmıştır.
 
 ---
 
@@ -520,4 +728,4 @@ Bu yapı, ilerleyen aşamalarda kargo takip sistemine yeni business kuralların�
 
 Developed as a **.NET 9 Clean Architecture Web API Kargo Takip Sistemi** project.
 
-The project focuses on applying modern backend development practices, clean architecture principles, authentication and authorization mechanisms in a real-world domain scenario.
+The project focuses on applying modern backend development practices, clean architecture principles, authentication and authorization mechanisms, CQRS and business-oriented API operations in a real-world domain scenario.

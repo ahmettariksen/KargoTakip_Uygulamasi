@@ -48,7 +48,7 @@ internal sealed class KargoGetAllQueryHandler(
                             },
                             KargoDurumu = new KargoDurumGetAllDto
                             {
-                                KargoDurumName = entity.KargoDurum.Name
+                                KargoDurumName = entity.KargoDurum.GetDisplayName()
                             },
                             CreateAt = entity.CreateAt,
                             UpdateAt = entity.UpdateAt,

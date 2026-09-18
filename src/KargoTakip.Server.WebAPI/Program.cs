@@ -78,7 +78,7 @@ app.UseResponseCompression();
 
 app.UseExceptionHandler();
 
-app.MapControllers().RequireRateLimiting("fixed");//.RequireAuthorization();
+app.MapControllers().RequireRateLimiting("fixed").RequireAuthorization();
 
 ExtensionsMiddleware.CreateFirstUser(app);
 

@@ -3,28 +3,19 @@ using GenericRepository;
 using KargoTakip.Server.Domain.Kargolarim;
 using Mapster;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TS.Result;
 
 namespace KargoTakip.Server.Application.Kargolarim;
-public sealed record KargoCreateCommand(
+public sealed record KargoUpdateCommand(
+    Guid Id,
     Person Gonderen,
     Person Alıcı,
     Address TeslimAdresi,
     KargoInformationDto KargoInformation) : IRequest<Result<string>>;
 
-// Validatör yapılanmasında direkt enumu kullanamıyoruz bu sebeple bir dto oluşturduk bizim enum değerlerimiz bir value dir o yüzden kargotipivalue değişkeni oluşturduk ve bu dto' yu da yukarıdaki kargoınformation değişkenine tip olarak yazdık kargoınformationdto yerine kargoınformation verseydik validatörde enumları yapılandıramazdık.
-public sealed record KargoInformationDto(
-    int KargoTipiValue,
-    int Agirlik);
-
-public sealed class KargoCreateCommandValidator : AbstractValidator<KargoCreateCommand>
+public sealed class KargoUpdateCommandValidator : AbstractValidator<KargoUpdateCommand>
 {
-    public KargoCreateCommandValidator()
+    public KargoUpdateCommandValidator()
     {
         RuleFor(p => p.Gonderen.FirstName).NotEmpty().WithMessage("Geçerli bir gönderen adı girin");
         RuleFor(p => p.Gonderen.LastName).NotEmpty().WithMessage("Geçerli bir gönderen soyadı girin");
@@ -39,14 +30,25 @@ public sealed class KargoCreateCommandValidator : AbstractValidator<KargoCreateC
             .LessThan(KargoTipiEnum.List.Count()).WithMessage("Geçerli bir kargo tipi seçin");
     }
 }
-internal sealed class KargoCreateCommandHandler(
+internal sealed class KargoUpdateCommandHandler(
     IKargoRepository kargoRepository,
-    IUnitOfWork unitOfWork) : IRequestHandler<KargoCreateCommand, Result<string>>
+    IUnitOfWork unitOfWork) : IRequestHandler<KargoUpdateCommand, Result<string>>
 {
-    public async Task<Result<string>> Handle(KargoCreateCommand request, CancellationToken cancellationToken)
+    public async Task<Result<string>> Handle(KargoUpdateCommand request, CancellationToken cancellationToken)
     {
-        Kargo kargo = request.Adapt<Kargo>();
+        Kargo? kargo = await kargoRepository.FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
+        if (kargo is null)
+        {
+            return Result<string>.Failure("Kargo bulunamadı");
+        }
+        if (kargo.KargoDurum != KargoDurumEnum.Bekliyor)
+        {
+            return Result<string>.Failure("Sadece bekleyen kargoları güncelleyebilirsin");
+        }
+        
+        //requestten gelen herşeyi otomatik olarak kargoya aktarıyor.Aktaramadığı parametreleri biz manuel aktarmamız gerekiyor.
+        request.Adapt(kargo);
         KargoInformation kargoInformation = new()
         {
             KargoTipi = KargoTipiEnum.FromValue(request.KargoInformation.KargoTipiValue),
@@ -57,13 +59,13 @@ internal sealed class KargoCreateCommandHandler(
         //Tc numarasında problem olduğu için manel aktarım yaptık.
         kargo.Alici = request.Alıcı;
         kargo.Gonderen = request.Gonderen;
-        kargoRepository.Add(kargo);
+        kargoRepository.Update(kargo);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         //to do : burada mail veya sms gönderme işlemleri yapılacak.
         //to do : ileride notification içinde domain event kullanabiliriz.
 
-        return "Kargo başarıyla kaydedildi";
+        return "Kargo başarıyla güncellendi";
     }
 }

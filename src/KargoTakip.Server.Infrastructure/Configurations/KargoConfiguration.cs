@@ -28,7 +28,7 @@ internal sealed class KargoConfiguration : IEntityTypeConfiguration<Kargo>
             .HasConversion(tip => tip.Value, value => KargoTipiEnum.FromValue(value));
             // yukarıda database value olarak yazar bize enum olarak verir.
         });
-        builder.Property(p => p.KargoDurum)
-            .HasConversion(durum => durum.Value, value => KargoDurumEnum.FromValue(value));
+
+        builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }
